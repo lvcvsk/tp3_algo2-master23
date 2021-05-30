@@ -1,0 +1,220 @@
+Representación:
+	fichin se representa con estr donde 
+		estr es tupla ⟨	mapa: Mapa,
+										alguienJugando?: bool,
+										jugadorActual: Jugador,
+										PartidaEnCurso: puntero(Partida),
+										ranking: diccTrie(jugador,
+											⟨infoJugador: itRPM, itJugPunt: itConj(jugador)⟩),
+										rankingPorMovimientos: dicc(nat,conj(jugador)),
+										oponenteActual: itRPM
+										rankingOriginal: diccTrie(jugador,nat)⟩
+										
+	donde itRPM es itdicc(nat,conj(jugador)) 
+	
+---
+notas: 
+• Estamos usando un modulo dicc que tiene un iterador que permite definir en O(1). Es casi exacto a al modulo diccLineal (seccion 7) del apunte de modulos Basicos. Se agrega la funcion definirSiguiente para el genero itdicc(nat,conj(jugador)). Este diccionario se llenara ordenado usando sus iteradores.
+//mostrar un seudocodigo de como.
+• Para respetar la espacificacion, y respentando los requerimientos de complejidad, mantenemos el ranking de forma original en la estructura, que se actualizara junto con los campos:e.rankingPorMovimientos, e.oponenteActual,e.itJugPunt, en la funcion mover de este modulo. Somos concientes que esto hace pesada la estructura.
+• idea de la estructura:
+-Oponente Actual guarda la informacion de quien es el oponente del jugador Actual en ese exacto momento, segun la cantidad de movimientos. Este iterador se actualiza por movimiento. En caso de haber ganado la partida, este estara apuntando al oponente que el jugador actual le ganó. Luego, agregamos en el diccionario al jugadorActual en la posicion anterior a este oponente(agregamos ordenado usando los el iterador itRPM "it ranking por movimientos".
+-e.ranking es un diccTrie que guarda una tupla con los campos:
+~infoJugado que es un itRMP
+~itJugPunt que es un iterador de conjunto. Del conjunto de jugadores que resulta de obtener un puntaje p, en el diccNat (e.rankingPorMovimientos).  Este iterador nos permitira buscar, borar en O(1).   
+-e.rankingPorMovimientos es un dicc que tiene por cada puntaje un conjunto de jugadores con ese puntaje. Los otros campos de la estructura de fichin ayudan a recorrer, y ordenar este campo en O(1) y agregar un jugador j en O(|j|). 
+ 
+							// mapa: Mapa,
+							// alguienJugando?: bool,
+							// jugadorActual: Jugador,
+							// PartidaEnCurso: puntero(Partida),
+							// ranking: diccTrie(jugador,
+							// 	⟨infoJugador: itRPM, itJugPunt: itConj(jugador)⟩),
+							// rankingPorMovimientos: dicc(nat,conj(jugador)),
+							// oponenteActual: itRPM
+							// rankingOriginal: diccTrie(jugador,nat)⟩
+							
+							//donde itRPM es itdicc(nat,conj(jugador)) 
+
+Solución Informal:
+	- las claves de e.rankingOriginal y e.ranking son iguales
+	- por cada j de e.ranking, para todo n natural, si obtener(j,e.rankingOriginal)=n entonces j esta en obtener(n,e.rankingPorMovimientos) 
+	-por cada j de tipo jugador,si esta definido en e.ranking, entonces luego
+	llamemos t a la tupla que se consigue de obtener(j, e.ranking):
+	vale def?(siguienteClave(t.infoJugador),e.rankingPorMovimientos) y Luego
+	obtener(siguienteClave(t.infoJugador),e.rankingPorMovimientos)=
+  siguienteSignificado(t.infoJugador) y ademas
+	siguiente(t.itJugPunt) pertenece a siguienteSignificado(t.infoJugador)
+	
+	  
+---
+Invariante de Representación:
+	Rep:	estr	->	boolean
+	(∀e: estr) Rep(e)	≡ true ↔ (1)∧(2)∧(3)
+	//nota: faltan las implicaciones para el otro lado
+	
+	(1) ≡ claves(e.rankingOriginal)= claves(e.ranking)
+	(2) ≡ (∀ j:jugador) def?(j,e.ranking) ⇒L 
+						(∀ n:nat) obtener(j,e.rankingOriginal)=n ⇒
+									j ∈ obtener(n,e.rankingPorMovimientos)
+	(3) ≡ (∀ j:jugador) def?(j,e.ranking) ⇒L
+						((∀ t:tupla(itRPM,itConj(jugador))) obtener(j,e.ranking)=t ∧L
+						def?(siguienteClave(π₁(t)),e.rankingPorMovimientos)) ∧L
+						obtener(siguienteClave(π₁(t)),e.rankingPorMovimientos)= siguienteSignificado(π₁(t)) ∧
+						siguiente(π₂(t)) ∈ siguienteSignificado(π₁(t))	
+								
+	
+---
+Función de abstracción:
+	Abs:	estr	->	fichin	{Rep(e)}
+	(∀e: estr) Abs(e) =obs f: fichin | (1)∧(2)∧L
+		donde: 
+		(1)	≡	mapa(f) = e.mapa
+		(2)	≡	alguienJugando?(f) = e.alguienJugando?
+		(3) ≡ alguienJugando?(f) ⇒L jugadorActual(f) = e.jugadorActual
+		(4) ≡ alguienJugando?(f) ⇒L partidaActual(f) = *e.PartidaEnCurso
+		(5) ≡ ranking(f) = e.rankingOriginal
+---
+Interfaz:
+	Se explica con:	TAD Fichin
+	Géneros:		fichin
+	
+	Operaciones básicas:
+	//requerimientos por contexto de uso
+		mover(in/out f: fichin, in d: direccion)
+		Pre ≡ {f =obs f₀ ∧ alguienJugando?(f)}
+		Post ≡ {f =obs mover(f₀,d)}
+		Complejidad: Θ(|j|)
+		Descripción: Mueve al jugador en direccion d
+		Aliasing: No presenta aspectos de aliasing.
+		---	
+		mapa(in f: fichin ) -> res : Mapa
+		Pre ≡ {true}
+		Post ≡ {res =obs mapa(f)}
+		Complejidad: Θ(1)
+		Descripción: Devuelve el mapa del fichin.
+		Aliasing: Devuelve una referencia no modificable.
+		---	
+		alguienJugando?(in f: fichin ) -> res : bool
+		Pre ≡ {true}
+		Post ≡ {res =obs alguienJugando?(f)}
+		Complejidad: Θ(1)
+		Descripción: Devuelve true si alguien esta jugando y false si no.
+		Aliasing: No presenta aspectos de aliasing.
+		---					
+		jugadorActual(in f: fichin ) -> res : Jugador
+		Pre ≡ {alguienJugando?(f)}
+		Post ≡ {res =obs jugadorActual(f)}
+		Complejidad: Θ(|j|) 
+		Descripción: Si hay alguien jugando, devuelve el nombre del jugador Actual.
+		Aliasing: No presenta aspectos de aliasing.
+		---			
+		partidaActual(in f: fichin ) -> res : Partida
+		Pre ≡ {alguienJugando?(f)}
+		Post ≡ {res =obs partidaActual(f)}
+		Complejidad: O(1)
+		Descripción: Si hay alguien jugando, devuelve la partida Actual.
+		Aliasing: Devuelve una referencia no modificable.
+		---	
+		ranking(in f: fichin ) -> res : Ranking
+		Pre ≡ {true}
+		Post ≡ {res =obs ranking(f)}
+		Complejidad: O(1)
+		Descripción: Si hay alguien jugando, devuelve la partida Actual.
+		Aliasing: Devuelve una referencia no modificable.
+		---	
+		nuevoFichin(in m: Mapa ) -> res : Fichin
+		Pre ≡ {true}
+		Post ≡ {res =obs nuevoFichin(m)}
+		Complejidad: O(1)
+		Descripción: Genera un Fichin.
+		Aliasing: No presenta aspectos de aliasing.
+		---									
+		nuevaPartida(in/out f: fichin, in j:Jugador )
+		Pre ≡ {f =obs f₀ ∧ ¬alguienJugando?(f)}
+		Post ≡ {f =obs nuevaPartida(m)}
+		Complejidad: O(c)
+		Descripción: Si no hay nadie jugando, empieza una partida nueva.
+		Aliasing: No presenta aspectos de aliasing. 
+		---									
+	Algoritmos del módulo:
+	//requerimientos por contexto de uso
+		imover(in/out e: estr, in d: direccion)
+			mover(*e.PartidaEnCurso,d)
+			if gano?(*e.PartidaEnCurso) ∨ perdio?(*e.PartidaEnCurso) then
+				if gano?(*e.PartidaEnCurso) then
+					if def?(e.ranking,e.jugadorActual) then
+						itRPM itjug ← significado(e.ranking,e.jugadorActual).infoJugador
+						itconj(jugador) itJugPunt ← significado(e.ranking,e.jugadorActual).itJugPunt
+						if cantMov(*e.PartidaEnCurso)<siguienteClave(itjug) then
+							borrarSiguiente(itJugPunt)
+							if vacio?(siguienteSignificado(itjug)) then
+								borrarSiguiente(itjug)
+							fi
+						fi
+						if siguienteClave(e.oponenteActual)=cantMov(*e.PartidaEnCurso) then
+							itConj(jugador) itconj ← agregar(siguienteSignificado(e.oponenteActual),e.jugadorActual)
+							definir(e.ranking,e.jugadorActual,⟨e.oponenteActual,itconj⟩)//O(|j|)
+							definir(e.rankingOriginal,e.jugadorActual,cantMov(*e.PartidaEnCurso))//O(|j|)
+						else
+							conj(jugador) ja ← vacio()
+							itconj(jugador) itja ← agregar(ja,e.jugadorActual)//O(|j|)
+							itRPM nuevoRPM ← definirSiguiente(e.oponenteActual,cantMov(*e.PartidaEnCurso),ja)
+							definir(e.ranking,e.jugadorActual,⟨nuevoRPM,itja⟩)//O(|j|)
+							definir(e.rankingOriginal,e.jugadorActual,cantMov(*e.PartidaEnCurso))//O(|j|)
+						fi
+					else //si el jugador juga por primera vez en el fichin
+							conj(jugador) ja ← vacio() //O(1)
+							itconj(jugador) itja ← agregar(ja,e.jugadorActual)//O(|j|)
+							itRPM nuevoRPM ← definirSiguiente(e.oponenteActual,cantMov(*e.PartidaEnCurso),ja)//O(1)
+							definir(e.ranking,e.jugadorActual,⟨nuevoRPM,itja⟩)//O(|j|)
+							definir(e.rankingOriginal,e.jugadorActual,cantMov(*e.PartidaEnCurso))//O(|j|)
+					fi	
+				fi//si dejó de jugar, actualizo los campos.
+				e.alguienJugando? ← false
+				e.jugadorActual ← ""
+				e.PartidaEnCurso ← NULL
+			else
+				//si esta jugando, vemos si avanzamos el iterador de oponente acual o no
+				if cantMov(*e.PartidaEnCurso)>siguienteClave(e.oponenteActual) then
+					siguiente(e.oponenteActual)
+				fi
+			fi
+			
+			//complejidad 
+			es la suma de las complejidades de cada operacion, hay k opercaciones de O(|j|) y t opercaiones Elementales 
+			...(completar)
+			entonces el orden de la funcion es O(|j|)
+		---
+		imapa(in e: estr ) -> res : Mapa
+			res ← mapa(*e.PartidaEnCurso)
+		---
+		ialguienJugando?(in e: estr ) -> res : bool
+			res ← e.alguienJugando
+		---
+		ijugadorActual(in e: estr ) -> res : Jugador
+			res ← e.jugadorActual
+		---
+		ipartidaActual(in e: estr ) -> res : Partida
+			res ← *e.PartidaEnCurso
+		---
+		iranking(in e: estr ) -> res : Ranking
+			res ← e.rankingOriginal
+		---
+		inuevoFichin(in m: Mapa ) -> res : estr
+			res.mapa ← m
+			res.alguienJugando? ← false
+			res.jugadorActual ← "" 
+			res.PartidaEnCurso ← NULL
+			res.ranking ← vacio()
+			res.rankingPorMovimientos ← vacio()
+			res.oponenteActual ←CrearIt(itRPM)
+		
+		---	
+		inuevaPartida(in/out e:estr, in j:Jugador )
+		
+			e.alguienJugando? ← true
+			e.jugadorActual ← j 
+			e.PartidaEnCurso ← new nuevaPartida(e.mapa)//aca para pedir memoria
+			
+			

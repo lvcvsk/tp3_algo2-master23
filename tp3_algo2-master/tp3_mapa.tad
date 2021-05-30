@@ -1,0 +1,242 @@
+contenido es tupla ⟨esChoco: bool, esPared: bool, esFan: bool ⟩
+Representación:
+	MAPA se representa con estr donde 
+		estr es tupla ⟨	grilla:	arreglo_dimensionable de 
+																arreglo_dimensionable de contenido,
+										chocolates:  conjunto(coordenada),
+										inicio: coordenada,
+										llegada: coordenada,
+										cant_filas: nat,
+										cant_columnas: nat ⟩
+
+Solución Informal:
+	(1) y (2) Es una matriz bien formada
+	(3) El contenido de cada casillero de la grilla es válido. Es decir un casillero puede tener fantasma y chocolate pero no pared y fantasma por ejemplo
+	(4) Si un casillero de la grilla tiene chocolate, entonces la coordenada de dicha grilla está en el conjunto de coordenadas de chocolates
+	(5) Para toda coordenada en e.chocolates, dicha coordenada de la grilla contiene chocolates
+	(6) La coordenada de inicio esta en la grilla y no contiene chocolate, fantasma o pared
+	(7) La coordenada de llegada esta en la grilla y no contiene chocolate, fantasma o pared
+	(8) El inicio y la llegada son coordenadas distintas
+	
+---
+donde,
+//⟨esChoco: bool, esPared: bool, esFan: bool ⟩
+contenido_valido:contenido->bool
+contenido_valido (c) ≡ c ==₁⟨true, false,true⟩ ∨	
+  										 c ==₁⟨true, false,false⟩ ∨
+											 c ==₁⟨false, false,true⟩ ∨
+											 c ==₁⟨false, true,false⟩
+														
+														
+hayChoco:contenido->bool
+hayChoco(c) ≡ π₁(c)	
+							
+• ==₁ •: contenido x contenido -> bool	
+t1 ==₁ t2 ≡ π₁(t1)==π₁(t2) ∧	
+						π₂(t1)==π₂(t2) ∧ 
+						π₃(t1)==π₃(t2)
+						
+paredesEngrilla:ad(ad(contenido)) g x nat i x nat j->conj(coordenada)
+															{0<=i< tam(g) ∧ 0<=j< tam(g[0])}
+paredesEngrilla (a,f,c) ≡ if(c>=0) 
+															then
+																if(definido?((a[f])[c])) 
+																	 then
+																		 		if ((a[f])[c])==₁⟨false, true,false⟩) 
+																				then
+																				 Ag(<f,c>, paredesEngrilla(a,f,c-1)
+																				else
+																				 paredesEngrilla(a,f,c-1)
+																				fi
+																	 else
+																	  	  paredesEngrilla(a,f,c-1)
+																	fi							
+																else
+																		if(f>=0)
+																			then
+																				paredesEngrilla(a,f-1,tam(a[0]))
+																			else
+																				Ø
+																		fi
+														fi	
+
+fantasmasEngrilla:ad(ad(contenido)) g x nat i x nat j->conj(coordenada)
+															{0<=i< tam(g) ∧ 0<=j< tam(g[0])}
+fantasmasEngrilla (a,f,c) ≡ if(c>=0) 
+															then
+																if(definido?((a[f])[c])) 
+																	 then
+																		 		if (
+																				(a[f])[c])==₁⟨true, false,true⟩ ∨ 
+																				(a[f])[c])==₁⟨false, false,true⟩ ) 
+																				then
+																				 Ag(<f,c>, fantasmasEngrilla(a,f,c-1)
+																				else
+																				 fantasmasEngrilla(a,f,c-1)
+																				fi
+																	 else
+																	  	  fantasmasEngrilla(a,f,c-1)
+																	fi							
+																else
+																		if(f>=0)
+																			then
+																				fantasmasEngrilla(a,f-1,tam(a[0]))
+																			else
+																				Ø
+																		fi
+														fi														
+																														
+																			
+Invariante de Representación:
+	Rep:	estr	->	boolean
+	(∀e: estr) Rep(e)	≡ true ⇐⇒ (1)∧(2)∧L((3)∧(4)∧(5)∧(6)∧(7)∧(8)
+		donde: 
+		(1)	≡	(∀i: nat)0<=i< e.cant_filas ⇒ definido?(e.grilla,i)
+		(2)	≡	(∀i: nat)0<=i< e.cant_filas ⇒
+													tam(e.grilla[i])== e.cant_columnas				
+		(3) ≡ (∀i: nat)0<=i< e.cant_filas ⇒L 
+							(∀j: nat)0<=j< e.cant_columnas ⇒L
+									contenido_valido((e.grilla[i])[j])
+		(4) ≡ (∀i: nat)0<=i< e.cant_filas ⇒L 
+							(∀j: nat)0<=j< e.cant_columnas ⇒
+									hayChoco((e.grilla[i])[j]) ⇒
+									 	⟨i,j⟩ ∈ e.chocolates
+		(5) ≡ (∀c: coordenada) c ∈ e.chocolates ⇒
+							(∀i: nat)(0<=i< e.cant_filas ∧L i = π₁(c)) ⇒L 
+									(∀j: nat)(0<=j< e.cant_columnas ∧L j = π₂(c)) ⇒
+											hayChoco((e.grilla[i])[j])
+		(6) ≡ 0<=π₁(e.inicio)< e.cant_filas ∧ 
+					0<=π₂(e.inicio)< e.cant_columnas ∧L
+					¬definido?(e.grilla[π₁(e.inicio)][π₂(e.inicio)]) 
+		(7) ≡ 0<=π₁(e.inicio)< e.cant_filas ∧ 
+					0<=π₂(e.inicio)< e.cant_columnas ∧L
+					¬definido?(e.grilla[π₁(e.inicio)][π₂(e.inicio)]) 
+		(8) ≡ e.inicio ≠ e.llegada
+---
+Función de abstracción:
+	Abs:	estr	->	mapa	{Rep(e)}
+	(∀e: estr) Abs(e) =obs m: mapa | (1)∧(2)∧(3)∧(4)∧(5)∧(6)∧(7)
+		donde: 
+		(1)	≡	largo(m) = e.cant_columnas
+		(2)	≡	alto(m) = e.cant_filas
+		(3) ≡ inicio(m) = e.inicio
+		(4) ≡ llegada(m) = e.llegada
+		(5) ≡ paredes(m) = paredesEngrilla(e.grilla,
+			 																	e.cant_filas, e.cant_columnas)
+		(6) ≡ fantasmas(m) = fantasmasEngrilla(e.grilla
+																				e.cant_filas, e.cant_columnas)
+		(7) ≡ chocolates(m) = e.chocolates
+---
+Interfaz:
+	// Parámetros formales:
+	// 	Géneros:	α
+	// 	Función:
+	// 		Copiar(in a:α) -> res: α
+	// 		Pre ≡ {true}
+	// 		Post ≡ {res = a} 
+	// 		Complejidad: Θ(copy(a))
+	// 		Descripción: Función copia de α's.
+	// 		---
+	Se explica con:	Tad Mapa
+	Géneros:		MAPA
+	
+	Operaciones básicas:
+		largo(in m: Mapa)	-> res: nat
+		Pre ≡ {true}
+		Post ≡ {res =obs largo(m)}
+		Complejidad: Θ(1)
+		Descripción: devuelve la cantidad de columnas del arreglo
+		Aliasing: No presenta aspectos de aliasing.
+		---
+		alto(in m: Mapa)	-> res: nat
+		Pre ≡ {true}
+		Post ≡ {res =obs alto(m)}
+		Complejidad: Θ(1)
+		Descripción: devuelve la cantidad de filas del arreglo
+		Aliasing: No presenta aspectos de aliasing.
+		---		
+		inicio(in m: Mapa)	-> res: coordenada
+		Pre ≡ {true}
+		Post ≡ {res =obs inicio(m)}
+		Complejidad: Θ(1)
+		Descripción: devuelve la coordenada donde esta el inicio
+		Aliasing: No presenta aspectos de aliasing.
+		---		
+		llegada(in m: Mapa)	-> res: coordenada
+		Pre ≡ {true}
+		Post ≡ {res =obs llegada(m)}
+		Complejidad: Θ(1)
+		Descripción: devuelve la coordenada donde esta la llegada
+		Aliasing: No presenta aspectos de aliasing.
+		---		
+		hayPared(in m: Mapa, in c:coordenda)	-> res: bool
+		Pre ≡ {0<=π₁(c)< alto(m) ∧ 0<=π₂(c)< largo(m)}
+		Post ≡ {res =obs c ∈ paredes(m) }
+		Complejidad: Θ(1)
+		Descripción: devuelve true si hay una pared en esa coordenada
+		Aliasing: No presenta aspectos de aliasing.
+		---	
+		hayfantasma(in m: Mapa, in c:coordenda)	-> res: bool
+		Pre ≡ {0<=π₁(c)< alto(m) ∧ 0<=π₂(c)< largo(m)}
+		Post ≡ {res =obs c ∈ fantasma(m) }
+		Complejidad: Θ(1)
+		Descripción: devuelve true si hay un fantasma en esa coordenada
+		Aliasing: No presenta aspectos de aliasing.
+		---	
+		Coor_chocolates(in m: Mapa)	-> res: conj(coordenadas)
+		Pre ≡ {true}
+		Post ≡ {res =obs chocolates(m)}
+		Complejidad: Θ(#chocolates(m))
+		Descripción: devuelve el conjunto de coordenadas de chocolates.
+		Aliasing: No presenta aspectos de aliasing.
+		//nota: este es el primer caso en donde devuelvo un campo de la estructura que no es tipo de dato primitivo. Todo lo que no es primitivo se pasa como referencia por default (si alguien modifica mi estructura puede romper el invariante) por eso hacemos una copia.
+		---	
+		nuevoMapa(in largo:nat,in alto:nat, in inicio:coordenda,in llrgada:coordenda, in paredes:conj(coordenda),in fantasmas:conj(coordenda),in chocolates:conj(coordenda) )	-> res: mapa
+		Pre ≡ {inicio ≠ llegada ∧ todosEnRango(paredes ∪ fantasmas ∪ chocolates ∪ {inicio, llegada},largo, alto) ∧ {inicio, llegada} ∩ (fantasmas ∪ paredes) = Ø ∧ disjuntosDeAPares(paredes, fantasmas, chocolates)}
+		Post ≡ {res =obs nuevoMapa(l,a,i,ll,p,f,ch)}
+		Complejidad: Θ()
+		Descripción: Genera un mapa.
+		Aliasing: No presenta aspectos de aliasing.
+		---					
+	Algoritmos del módulo:
+		ilargo(in e: estr)	-> res: nat
+			res ← e.cant_columnas
+		---
+		ialto(in e: estr)	-> res: nat
+			res ← e.cant_filas
+		---
+		iinicio(in e: estr)	-> res: coordenada
+			res ← e.inicio
+		---
+		illegada(in e: estr)	-> res: coordenada
+			res ← e.llegada
+		---
+		ihayPared(in e:estr, in c:coordenda)	-> res: bool
+			res ← ((e.grilla[c.campo₁])[c.campo₂] ) .campo₂ 
+		---
+		ihayfantasma(in e:estr, in c:coordenda)	-> res: bool
+		 	res ← ((e.grilla[c.campo₁])[c.campo₂] ) .campo₃ 
+		---
+		iCoor_chocolates(in e:estr)	-> res: conj(coordenadas)
+		 	var 
+			i: nat
+			conj : conj(coordenadas)
+			conj ← copiar(e.chocolates)
+			res ← conj
+		--- 
+		inuevoMapa(in largo:nat,in alto:nat, in inicio:coordenda,in llegada:coordenda, in paredes:conj(coordenda),in fantasmas:conj(coordenda),in chocolates:conj(coordenda) )	
+		-> res: mapa
+		res.chocolates ← chocolates		
+		res.inicio ← inicio
+		res.llegada ← llegada
+		
+		
+		
+		// tupla ⟨	grilla:	arreglo_dimensionable de 
+		// 														arreglo_dimensionable de contenido,
+		// 								chocolates:  conjunto(coordenada),
+		// 								inicio: coordenada,
+		// 								llegada: coordenada,
+		// 								cant_filas: nat,
+		// 								cant_columnas: nat ⟩
+		 

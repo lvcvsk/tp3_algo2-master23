@@ -1,0 +1,183 @@
+Representación:
+	partida se representa con estr donde 
+		estr es tupla ⟨	mapa            : mapa,
+										posicionJugador : coordenada,
+										chocolates      : array(array(bool)), 
+							---//mismo tamaño que el mapa. si hay un chocolate = TRUE
+										cantMov         : nat,
+										inmunidad       : nat⟩
+
+Solución Informal:
+	(1) El jugador tiene que tener una coordenada valida en el mapa
+	(2) Si una posicion es true en chocolate entonces en el mapa tiene que tener un chocolate
+	(3) La inmunidad es menor igual a 10
+	(4) Si tengo inmunidad entonces tiene que haber menos chocolates que en el mapa
+
+
+---
+Invariante de Representación:
+	Rep:	estr	->	boolean
+	(∀e: estr) Rep(e)	≡ true ⇐⇒ (1)∧(2)∧(3)∧(4)∧(5)∧(6)
+		donde: 
+		(1)	≡	π1(posicionJugador) > 0 ∧ π1(posicionJugador) ≤ largo(mapa) ∧ π2(posicionJugador) > 0 ∧ π2(posicionJugador) ≤ alto(mapa) 
+					∧L¬(posicionJugador ⊄ (paredes(mapa))
+		(2)	≡	(∀ i : nat)(∀ j : nat)(0 ≤ i < longitud(mapa) ∧ 0 ≤ j < longitud(mapa[0]) ∧L 
+						chocolates[i][j] ⇒L ⟨i,j⟩ ∈ chocolates(mapa))
+		(3) ≡ inmunidad ≤ 10
+		(4) ≡ (inmunidad > 0) ⇒L #(chocolates(mapa)) ≠ 
+				sumatoria desde i,j = 0 hasta i = longitud(mapa) j = longitud(mapa[0]) de β(chocolates[i][j])
+
+Función de abstracción:
+	Abs:	estr	->	partida	{Rep(e)}
+	(∀e: estr) Abs(e) =obs p: partida | (1)∧(2)
+		donde: 
+		(1)	≡	mapa(p)       ≡ e.mapa
+		(2)	≡	jugador(p)    ≡ e.posicionJugador 
+		(3) ≡ chocolates(p) ≡ ∪ (∀ i : nat)(∀ j : nat)
+						(0 ≤ i < longitud(mapa) ∧ 0 ≤ j < longitud(mapa[0]) ∧L 
+																					chocolates[i][j] ⇒L {i,j}
+		(4) ≡ cantMov(p)    ≡ e.cantMov
+		(5) ≡ inmunidad(o)  ≡ e.inmunidad
+
+Interfaz:
+	// Parámetros formales:
+	// 	Géneros:	partida
+	// 	Función:
+	Se explica con:	partida
+	Géneros:		partida
+	
+	Operaciones básicas:
+	nuevaPartida(in m : mapa) -> res: partida
+	Pre ≡ {true}
+	Post ≡ {res}
+	Complejidad: Θ(c) \\c = cantidad chocolates 
+	Descripción: crea una partida nueva dado un mapa
+	Aliasing: No presenta aspectos de aliasing.
+	
+	---
+	moverJugador(inout partida : partida, in dir : direccion)
+	Pre ≡ {partida = partida₀ ∧ ¬(gano?(p) ∨ perdio?(p))   }
+	Post ≡ {res = jugador(partida₀) = siguienteMovimiento(partida,d)} 
+	Complejidad: Θ(1)
+	Descripción: Mueve al jugador una posicion (arriba, abajo, izquierda, derecha)
+	Aliasing: No presenta aspectos de aliasing.
+		---
+	posMov(in c : coordenada, in d : direccion) -> res : coordenada
+	Pre ≡ {true}
+	Post ≡ {res = π1 c + (d = DERECHA) - (d = IZQUIERDA),
+						π2 c + (d = ARRIBA) - (d = ABAJO)} 
+	Complejidad: Θ(1)
+	Descripción: Mueve la coordenada  una posicion (arriba, abajo, izquierda, derecha)
+	Aliasing: No presenta aspectos de aliasing.
+		
+		---		
+	gano?(in p : partida) -> res : bool
+	Pre ≡ {true}
+	Post ≡ {res = gano?(p)} 
+	Complejidad: Θ(1)
+	Descripción: si el jugador esta en la llegada entonces gano
+	Aliasing: No presenta aspectos de aliasing.
+		---
+	perdio?(in p : partida) -> res : bool
+	Pre ≡ {true}
+	Post ≡ {res = perdio?(p)} 
+	Complejidad: Θ(1)
+	Descripción: si el jugador esta a 3 o menos de un fantasma y no tiene inmunidad perdio y no gano entonces perdio
+	Aliasing: No presenta aspectos de aliasing.
+		---
+	restringirMov(in p : partida, dir) -> res : bool
+	Pre ≡ {true}
+	Post ≡ {res = restringirMov(p,d)} 
+	Complejidad: Θ(1)
+	Descripción: si me muevo a una pared o fuera de la grilla o perdi o gane entonces no me puedo mover no mover = true
+	Aliasing: No presenta aspectos de aliasing.
+		---
+		restringirMov(in p : partida, dir) -> res : bool
+		Pre ≡ {true}
+		Post ≡ {res = cantMov(p)} 
+		Complejidad: Θ(1)
+		Descripción: devuelve la cantidad de movimientos total de esa partida
+		Aliasing: No presenta aspectos de aliasing.
+		---
+	Algoritmos del módulo:
+		inuevaPartida(in m : mapa) -> res: partida
+		res = vacía																 O(1)
+		res.mapa       = m  \\por referencia       O(1)
+		
+		for chocolate in m.chocolates              O(c) 
+		\\ponemos todos las posiciones donde hay chocolates como true
+		res.chocolates[π1 chocolate][π2 chocolate] = true
+		res.cantMov    = 0                         O(1)
+		res.posicionJugador = m.inicio             O(1)
+		res.inmunidad   = 0                        O(1)
+		
+		devolver res                               O(1)
+		
+	---
+		iposMov(in c : coordenada, in d : direccion) -> res : coordenada
+		res = c
+		if dir = izquierda:
+			res = ⟨ π1(c) , π2(c) - 1⟩
+		elif dir = derecha:
+			res = ⟨ π1(c) , π2(c) + 1⟩
+		elif dir = arriba:
+			res = ⟨ π1(c) - 1 , π2(c)⟩
+		else:
+			res = ⟨ π1(c) + 1 , π2(c)⟩
+			
+			return res
+			---
+	imoverJugador(inout partida: partida, dir : direccion)
+		
+		if restringirMov(partida, dir): 
+	\\si hay pared o vas fuera de la grilla o perdiste o ganaste no te moves
+			partida.cantMov ++
+			
+			partida.posicionJugador = posMov(partida.posicionJugador, dir)
+		
+		if partida.chocolates[π1 partida.posicionJugador][π2 	partida.posicionJugador]:       O(1) acceder array
+				partida.chocolates[π1 partida.posicionJugador][π2 	partida.posicionJugador] = false O(1) eliminar de  array
+				partida.inmunidad  = 10
+		elif partida.inmunidad != 0:
+					partida.inmunidad --
+		---
+		igano?(in p : partida) -> res : bool
+			return p.posicionJugador = p.mapa.llegada      O(1)
+			
+			---
+	iperdio?(in p : partida) -> res : bool
+	res = false
+	
+	if p.inmunidad = 0 and ¬(gano?(p)):
+		  me fijo para todo punto a distancia manhattan de 3 o menos de p.posicionJugador, O(1) acotado solo me fijo las 
+			si en algun punto p.mapa.grilla.esFan = true: entnoces														distancias manhattan de longitud
+																																												3 o menos siempre son constantes
+	      																																								como accedo con array es constante.
+				res = true
+	 return res
+			 ---
+	 irestringirMov(in p : partida, dir) -> res : bool
+	 res = false 
+	 
+	 siguienteMov = posMov(p.posicionJugador, dir)
+	 if (gano?(p) or perdio?(p)) \\ambos Algoritmos son O(1)
+ 			res = true  
+	
+			if longitud(p.mapa) > π₂ siguienteMov and longitud(p.mapa[0]) > π₁ siguienteMov: \\acceder a arrays es O(1)
+	   if p.mapa[π₁ siguienteMov][π₂ siguienteMov].espared:
+		 		res = true 
+	else
+		res = true
+	
+	return res
+			
+	icantMov(in p: partida) -> res : nat
+	return p.cantMov         o(1) por copia
+
+			
+			 
+			 
+			
+			
+				
+	
