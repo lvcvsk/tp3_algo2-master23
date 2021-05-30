@@ -50,7 +50,7 @@ Interfaz:
 	nuevaPartida(in m : mapa) -> res: partida
 	Pre ≡ {true}
 	Post ≡ {res}
-	Complejidad: Θ(c) \\c = cantidad chocolates 
+	Complejidad: Θ(c) 	\\ c = cantidad chocolates 
 	Descripción: crea una partida nueva dado un mapa
 	Aliasing: No presenta aspectos de aliasing.
 	
@@ -105,11 +105,11 @@ Interfaz:
 		res.mapa       = m  \\por referencia       O(1)
 		
 		for chocolate in m.chocolates              O(c) 
-		\\ponemos todos las posiciones donde hay chocolates como true
-		res.chocolates[π1 chocolate][π2 chocolate] = true
+			\\ Ponemos todos las posiciones donde hay chocolates como true
+			res.chocolates[π1 chocolate][π2 chocolate] = true
 		res.cantMov    = 0                         O(1)
 		res.posicionJugador = m.inicio             O(1)
-		res.inmunidad   = 0                        O(1)
+		res.inmunidad  = 0                         O(1)
 		
 		devolver res                               O(1)
 		
@@ -130,7 +130,7 @@ Interfaz:
 	imoverJugador(inout partida: partida, dir : direccion)
 		
 		if restringirMov(partida, dir): 
-	\\si hay pared o vas fuera de la grilla o perdiste o ganaste no te moves
+			\\si hay pared o vas fuera de la grilla o perdiste o ganaste no te moves
 			partida.cantMov ++
 			
 			partida.posicionJugador = posMov(partida.posicionJugador, dir)
@@ -142,7 +142,7 @@ Interfaz:
 					partida.inmunidad --
 		---
 		igano?(in p : partida) -> res : bool
-			return p.posicionJugador = p.mapa.llegada      O(1)
+			return p.posicionJugador == p.mapa.llegada      O(1)
 			
 			---
 	iperdio?(in p : partida) -> res : bool
@@ -172,7 +172,7 @@ Interfaz:
 	return res
 			
 	icantMov(in p: partida) -> res : nat
-	return p.cantMov         o(1) por copia
+	return p.cantMov         O(1) por copia
 
 			
 			 
