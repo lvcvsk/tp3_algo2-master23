@@ -148,13 +148,13 @@ Interfaz:
 	iperdio?(in p : partida) -> res : bool
 	res = false
 	
-	if p.inmunidad = 0 and ¬(gano?(p)):
+	if p.inmunidad == 0 and ¬(gano?(p)):
 		  me fijo para todo punto a distancia manhattan de 3 o menos de p.posicionJugador, O(1) acotado solo me fijo las 
 			si en algun punto p.mapa.grilla.esFan = true: entnoces														distancias manhattan de longitud
 																																												3 o menos siempre son constantes
 	      																																								como accedo con array es constante.
-				res = true
-	 return res
+			res = true
+	return res
 			 ---
 	 irestringirMov(in p : partida, dir) -> res : bool
 	 res = false 
